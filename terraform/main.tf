@@ -28,3 +28,22 @@ resource "aws_s3_bucket" "dyndns" {
   acl    = "private"
   tags   = {"App" = "dyndns"}
 }
+
+resource "aws_lambda_function" "dyndns" {
+  filename = "../v2/dist/dynamic_dns_lambda.zip"
+  function_name = "dyndns"
+  role = "${aws_iam_role.dyndns.arn}"
+  handler = "dynamic_dns_lambda.lambda_handler"
+  runtime = "python3.6"
+  timeout = "10"
+  memory_size = "128"
+  publish = true
+  environment {
+    variables = {
+      config_s3_region = "${aws.region.current.name}",
+      config_s3_bucket = "${aws_s3_bucket.dyndns.bucket}",
+      config_s3_key = "config.json"
+    }
+  }
+  tags = {"App" = "dyndns"}
+} 
