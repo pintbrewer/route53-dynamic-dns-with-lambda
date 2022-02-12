@@ -47,3 +47,9 @@ resource "aws_lambda_function" "dyndns" {
   }
   tags = {"App" = "dyndns"}
 } 
+resource "aws_iam_role" "dyndns" {
+  role_name = "lambda-dyndns"
+  assume_role_policy = <<EOF
+<COPY POLICY HERE>
+EOF
+}
