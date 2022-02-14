@@ -222,6 +222,15 @@ resource "aws_lambda_permission" "apigw_lambda" {
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
   source_arn = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.dyndns.id}/*/${aws_api_gateway_method.dyndns_get.http_method}${aws_api_gateway_resource.dyndns.path}"
 }
+resource "aws_lambda_permission" "apigw_lambda_post" {
+  statement_id  = "AllowExecutionFromAPIGatewayPost"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.dyndns.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
+  source_arn = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.dyndns.id}/*/${aws_api_gateway_method.dyndns_post.http_method}${aws_api_gateway_resource.dyndns.path}"
+}
 resource "aws_api_gateway_deployment" "dyndns" {
   rest_api_id = aws_api_gateway_rest_api.dyndns.id
   triggers = {
