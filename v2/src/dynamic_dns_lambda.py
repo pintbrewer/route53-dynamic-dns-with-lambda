@@ -33,6 +33,7 @@ def read_s3_config():
         's3',
         config_s3_region,
     )
+    
 
     # Download the config to /tmp
     s3_client.download_file(
@@ -128,7 +129,7 @@ def route53_client(execution_mode, aws_region, route_53_zone_id,
     '''
 
 
-def run_set_mode(set_hostname, validation_hash, source_ip, internal_ip):
+def run_set_mode(set_hostname, validation_hash, source_ip):
     # Try to read the config, and error if you can't.
     try:
         full_config = read_s3_config()
@@ -140,11 +141,12 @@ def run_set_mode(set_hostname, validation_hash, source_ip, internal_ip):
                 'return_message': return_message}
     # Check if internal_ip was set
 	# Comment out the following 4 lines to disable internal IP
-    if internal_ip == "":
-        set_ip = source_ip
-    else:
-        set_ip = internal_ip
+    # if internal_ip == "":
+    #     set_ip = source_ip
+    # else:
+    #     set_ip = internal_ip
     # Get the section of the config related to the requested hostname.
+    set_ip = source_ip
     record_config_set = full_config[set_hostname]
     aws_region = record_config_set['aws_region']
     # the Route 53 Zone you created for the script
@@ -234,8 +236,8 @@ def lambda_handler(event, context):
     # Set event data from the API Gateway to variables.
     execution_mode = event['execution_mode']
     source_ip = event['source_ip']
-    query_string = event['query_string']
-    internal_ip = event['internal_ip']
+    #query_string = event['query_string']
+    #internal_ip = event['internal_ip']
     validation_hash = event['validation_hash']
     set_hostname = event['set_hostname']
 
@@ -256,7 +258,7 @@ def lambda_handler(event, context):
 
     # Proceed with set mode to create or update the DNS record.
     else:
-        return_dict = run_set_mode(set_hostname, validation_hash, source_ip, internal_ip)
+        return_dict = run_set_mode(set_hostname, validation_hash, source_ip)
 
     # This Lambda function always exits as a success
     # and passes success or failure information in the json message.
