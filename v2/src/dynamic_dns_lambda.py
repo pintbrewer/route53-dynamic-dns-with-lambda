@@ -33,7 +33,7 @@ def read_s3_config():
         's3',
         config_s3_region,
     )
-    
+
 
     # Download the config to /tmp
     s3_client.download_file(
@@ -238,8 +238,8 @@ def lambda_handler(event, context):
     source_ip = event['source_ip']
     #query_string = event['query_string']
     #internal_ip = event['internal_ip']
-    validation_hash = event['validation_hash']
-    set_hostname = event['set_hostname']
+    validation_hash = event.get('validation_hash')
+    set_hostname = event.get('set_hostname')
 
     # Verify that the execution mode was set correctly.
     execution_modes = ('set', 'get')
