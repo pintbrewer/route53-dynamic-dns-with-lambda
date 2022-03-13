@@ -1,2 +1,8 @@
 .DS_Store
 ./wip
+**/env/
+**/.terraform
+**/terraform.tfstate*
+**.terraform*
+**/*.zip
+

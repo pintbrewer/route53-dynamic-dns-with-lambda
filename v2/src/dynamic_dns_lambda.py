@@ -13,12 +13,13 @@ from __future__ import print_function
 import json
 import re
 import hashlib
+import os
 import boto3
 
 # Tell the script where to find the configuration file.
-config_s3_region = 'us-west-2'
-config_s3_bucket = 'my_bucket_name'
-config_s3_key = 'config.json'
+config_s3_region = os.environ['config_s3_region']
+config_s3_bucket = os.environ['config_s3_bucket']
+config_s3_key = os.environ['config_s3_key']
 
 
 ''' This function pulls the json config file from S3 and
@@ -33,14 +34,15 @@ def read_s3_config():
         config_s3_region,
     )
 
+
     # Download the config to /tmp
     s3_client.download_file(
         config_s3_bucket,
         config_s3_key,
-        '/tmp/%s' % config_s3_key
+        f'/tmp/{config_s3_key}'
     )
     # Open the config and return the json as a dictionary.
-    full_config = (open('/tmp/%s' % config_s3_key).read())
+    full_config = (open(f'/tmp/{config_s3_key}').read())
     return json.loads(full_config)
 
 
@@ -127,7 +129,7 @@ def route53_client(execution_mode, aws_region, route_53_zone_id,
     '''
 
 
-def run_set_mode(set_hostname, validation_hash, source_ip, internal_ip):
+def run_set_mode(set_hostname, validation_hash, source_ip):
     # Try to read the config, and error if you can't.
     try:
         full_config = read_s3_config()
@@ -139,11 +141,12 @@ def run_set_mode(set_hostname, validation_hash, source_ip, internal_ip):
                 'return_message': return_message}
     # Check if internal_ip was set
 	# Comment out the following 4 lines to disable internal IP
-    if internal_ip == "":
-        set_ip = source_ip
-    else:
-        set_ip = internal_ip
+    # if internal_ip == "":
+    #     set_ip = source_ip
+    # else:
+    #     set_ip = internal_ip
     # Get the section of the config related to the requested hostname.
+    set_ip = source_ip
     record_config_set = full_config[set_hostname]
     aws_region = record_config_set['aws_region']
     # the Route 53 Zone you created for the script
@@ -165,7 +168,7 @@ def run_set_mode(set_hostname, validation_hash, source_ip, internal_ip):
 
     # Calculate the validation hash.
     calculated_hash = hashlib.sha256(
-        source_ip + set_hostname + shared_secret).hexdigest()
+        (source_ip + set_hostname + shared_secret).encode()).hexdigest()
     # Compare the validation_hash from the client to the
     # calculated_hash.
     # If they don't match, error out.
@@ -233,16 +236,16 @@ def lambda_handler(event, context):
     # Set event data from the API Gateway to variables.
     execution_mode = event['execution_mode']
     source_ip = event['source_ip']
-    query_string = event['query_string']
-    internal_ip = event['internal_ip']
-    validation_hash = event['validation_hash']
-    set_hostname = event['set_hostname']
+    #query_string = event['query_string']
+    #internal_ip = event['internal_ip']
+    validation_hash = event.get('validation_hash')
+    set_hostname = event.get('set_hostname')
 
     # Verify that the execution mode was set correctly.
     execution_modes = ('set', 'get')
     if execution_mode not in execution_modes:
         return_status = 'fail'
-        return_message = 'You must pass mode=get or mode=set arguments.'
+        return_message = 'Mode not "set" of "get"'
         return_dict = {'return_status': return_status,
                        'return_message': return_message}
 
@@ -255,7 +258,7 @@ def lambda_handler(event, context):
 
     # Proceed with set mode to create or update the DNS record.
     else:
-        return_dict = run_set_mode(set_hostname, validation_hash, source_ip, internal_ip)
+        return_dict = run_set_mode(set_hostname, validation_hash, source_ip)
 
     # This Lambda function always exits as a success
     # and passes success or failure information in the json message.
