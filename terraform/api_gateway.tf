@@ -2,12 +2,6 @@ resource "aws_api_gateway_rest_api" "dyndns" {
   name        = "dynamic_dns_lambda_api"
 }
 
-# resource "aws_api_gateway_resource" "dyndns" {
-#   rest_api_id = aws_api_gateway_rest_api.dyndns.id
-#   parent_id   = aws_api_gateway_rest_api.dyndns.root_resource_id
-#   path_part = ""
-# }
-
 resource "aws_api_gateway_model" "setdns" {
   rest_api_id  = aws_api_gateway_rest_api.dyndns.id
   name         = "setdns"
@@ -19,7 +13,6 @@ resource "aws_api_gateway_model" "setdns" {
   "title": "DnsSetModel",
   "type": "object",
   "properties": {
-    "department": { "type": "string" },
     "hostname": {"type":"string"},
     "hash": {"type": "string"}
   }
@@ -45,9 +38,6 @@ resource "aws_api_gateway_method" "dyndns_post" {
   http_method = "POST"
   authorization = "NONE"
   api_key_required = true
-  request_parameters = {
-    "method.request.querystring.mode" = false,
-  }
   request_models = {
     "application/json" = "setdns"
   }
@@ -70,6 +60,36 @@ resource "aws_api_gateway_integration" "integration_get" {
             )
         }
 }
+resource "aws_api_gateway_method_response" "response_get_200" {
+  rest_api_id = aws_api_gateway_rest_api.dyndns.id
+  resource_id = aws_api_gateway_rest_api.dyndns.root_resource_id
+  http_method = aws_api_gateway_method.dyndns_get.http_method
+  status_code = "200"
+  response_models = {"application/json" = "Empty"}
+}
+resource "aws_api_gateway_method_response" "response_post_200" {
+  rest_api_id = aws_api_gateway_rest_api.dyndns.id
+  resource_id = aws_api_gateway_rest_api.dyndns.root_resource_id
+  http_method = aws_api_gateway_method.dyndns_post.http_method
+  status_code = "200"
+  response_models = {"application/json" = "Empty"}
+}
+
+resource "aws_api_gateway_integration_response" "integration_response_get" {
+  rest_api_id = aws_api_gateway_rest_api.dyndns.id
+  resource_id = aws_api_gateway_rest_api.dyndns.root_resource_id
+  http_method = aws_api_gateway_method.dyndns_get.http_method
+  status_code = aws_api_gateway_method_response.response_get_200.status_code
+  
+}
+resource "aws_api_gateway_integration_response" "integration_response_post" {
+  rest_api_id = aws_api_gateway_rest_api.dyndns.id
+  resource_id = aws_api_gateway_rest_api.dyndns.root_resource_id
+  http_method = aws_api_gateway_method.dyndns_post.http_method
+  status_code = aws_api_gateway_method_response.response_post_200.status_code
+  
+}
+
 resource "aws_api_gateway_integration" "integration_post" {
   rest_api_id             = aws_api_gateway_rest_api.dyndns.id
   resource_id             = aws_api_gateway_rest_api.dyndns.root_resource_id
@@ -81,12 +101,10 @@ resource "aws_api_gateway_integration" "integration_post" {
   request_templates = {
     "application/json" = <<EOF
 {
-  "execution_mode" : "$input.params('mode')",
-  "set_hostname" : $input.json('$.host'),
-  "validation_hash" : $input.json('$.hash'),
-  "source_ip" : "$context.identity.sourceIp",
-  "query_string" : "$input.params().querystring",
-  "internal_ip" : "$input.params('internalIp')"
+  "execution_mode" : "set",
+  "set_hostname" : $input.json('$.set_hostname'),
+  "validation_hash" : $input.json('$.validation_hash'),
+  "source_ip" : "$context.identity.sourceIp"
 }
 EOF
   }
@@ -114,7 +132,15 @@ resource "aws_lambda_permission" "apigw_lambda_post" {
 resource "aws_api_gateway_deployment" "dyndns" {
   rest_api_id = aws_api_gateway_rest_api.dyndns.id
   triggers = {
-    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.dyndns.body))
+    redeployment = sha1(jsonencode([aws_api_gateway_rest_api.dyndns.body,
+                                    aws_api_gateway_method.dyndns_get.id,
+                                    aws_api_gateway_method.dyndns_post.id,
+                                    aws_api_gateway_integration.integration_get.id,
+                                    aws_api_gateway_integration.integration_post.id,
+                                    aws_api_gateway_integration_response.integration_response_get.id,
+                                    aws_api_gateway_integration_response.integration_response_post.id
+                                    ]))
+    
   }
 
   lifecycle {
@@ -137,7 +163,7 @@ resource "aws_api_gateway_usage_plan" "dyndns" {
   }
 
   quota_settings {
-    limit  = 20
+    limit  = 1000
     offset = 2
     period = "WEEK"
   }

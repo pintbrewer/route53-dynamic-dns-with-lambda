@@ -48,6 +48,7 @@ resource "aws_iam_policy" "dyndns" {
             "Effect": "Allow",
             "Action": [
                 "route53:ChangeResourceRecordSets",
+                "route53:ListResourceRecordSets",
                 "logs:PutLogEvents"
             ],
             "Resource": [
