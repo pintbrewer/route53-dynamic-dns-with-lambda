@@ -1,3 +1,10 @@
+data "archive_file" "lambda_zip" {
+    type        = "zip"
+    source_file  = "../v2/src/dynamic_dns_lambda.py"
+    output_path = "../v2/dist/dynamic_dns_lambda.zip"
+}
+
+
 resource "aws_lambda_function" "dyndns" {
   filename = "../v2/dist/dynamic_dns_lambda.zip"
   function_name = "dyndns"
