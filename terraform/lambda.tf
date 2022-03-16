@@ -22,7 +22,6 @@ resource "aws_lambda_function" "dyndns" {
       config_s3_key = "config.json"
     }
   }
-  tags = {"App" = "dyndns"}
 } 
 
 resource "aws_iam_role" "dyndns" {
@@ -42,7 +41,6 @@ resource "aws_iam_role" "dyndns" {
     ]
 }
 EOF
-  tags = {"App" = "dyndns"}
 }
 
 resource "aws_iam_policy" "dyndns" {
@@ -94,7 +92,6 @@ resource "aws_iam_policy" "dyndns" {
     ]
 }
 EOF
-  tags = {"App" = "dyndns"}
 }
 
 resource "aws_iam_role_policy_attachment" "dyndns" {

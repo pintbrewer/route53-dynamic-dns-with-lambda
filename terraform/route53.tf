@@ -1,6 +1,5 @@
 resource "aws_route53_zone" "ddns_zone" {
   name = "${var.sub_domain}.${var.base_domain}"
-  tags =  {"App" = "dyndns"}
 }
 
 resource "aws_route53_record" "ddns_ns" {

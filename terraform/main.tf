@@ -22,6 +22,11 @@ provider "archive" {
 
 provider aws {
     region     = "us-east-1"
+     default_tags {
+       tags = {
+        App = "dyndns"
+        }
+      }
 }
 
 data "aws_caller_identity" "current" {}
@@ -35,7 +40,6 @@ data "aws_route53_zone" "base" {
 resource "aws_s3_bucket" "dyndns" {
   bucket = "${var.sub_domain}-config-${data.aws_region.current.name}-${data.aws_caller_identity.current.account_id}"
   acl    = "private"
-  tags   = {"App" = "dyndns"}
 }
 
 
